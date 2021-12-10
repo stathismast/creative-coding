@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iM iN bIG tROUBLE</title>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.js"></script>
+  <script>
+    var xSize = 20;
+    var ySize = 20;
+
+    var xCells;
+    var yCells;
+
+    var originalWidth;
+    var originalHeight;
+
+    var positionOffset = 3
+
+    var cells;
+
+    function drawBackground(){
+      background(252);
+    }
+
+    function setupCells(){
+      cells = new Array();
+      for (var i = 0; i < xCells; i++)
+        cells[i] = new Array(yCells).fill(0);
+    }
+
+    function setupCanvas(){
+      createCanvas(originalWidth+positionOffset, originalHeight+positionOffset);
+    }
+
+    function randomInt(max) {
+      return floor(random() * floor(max));
+    }
+
+    function addRandomCell(){
+      let x = randomInt(xCells);
+      let y = randomInt(yCells);
+      while(cells[x][y] == 1){
+        x = randomInt(xCells);
+        y = randomInt(yCells);
+      }
+      cells[x][y] = 1;
+    }
+
+    function randomizeCells(fillPercentage){
+      for(let i in cells)
+        for(let j in cells[i])
+          cells[i][j] = 0;
+
+      for(var i = 0; i < xCells*yCells*(fillPercentage/100); i++){
+        addRandomCell();
+      }
+    }
+
+    function setup(){
+      originalWidth = windowWidth-positionOffset-5;
+      originalHeight = windowHeight-positionOffset-5;
+
+      xCells = floor(originalWidth/xSize);
+      yCells = floor(originalHeight/ySize);
+
+      setupCells();
+
+      randomizeCells(20);
+
+      setupCanvas();
+
+      frameRate(12);
+    }
+
+    function drawRectangle(x,y){
+      rect(x,y,xSize,ySize);
+    }
+
+    function drawCell(x,y){
+      drawRectangle(x*originalWidth/xCells+positionOffset, y*originalHeight/yCells+positionOffset)
+    }
+
+    function drawCells(){
+      for(let i in cells){
+        for(let j in cells[i]){
+          if(cells[i][j]){
+            fill('red');
+            drawCell(i,j);
+          }
+          else{
+            fill('white');
+            drawCell(i,j);
+          }
+        }
+      }
+    }
+
+    function countNeighbors(x,y){
+      x = x-1+1;
+      y = y-1+1;
+      let count = 0;
+      if(x-1 >= 0 && y-1 >= 0 && cells[x-1][y-1]) count += 1;
+      if(y-1 >= 0 && cells[x][y-1]) count += 1;
+      if(x+1 < xCells && y-1 >= 0 && cells[x+1][y-1]) count += 1;
+      if(x-1 >= 0 && cells[x-1][y]) count += 1;
+      if(x+1 < xCells && cells[x+1][y]) count += 1;
+      if(x-1 >= 0 && y+1 < yCells && cells[x-1][y+1]) count += 1;
+      if(y+1 < yCells && cells[x][y+1]) count += 1;
+      if(x+1 < xCells && y+1 < yCells && cells[x+1][y+1]) count += 1;
+      return count;
+    }
+
+    function tick(){
+      let newCells = new Array();
+      for (var i = 0; i < xCells; i++)
+        newCells[i] = new Array(yCells).fill(0);
+
+      for(let i in cells){
+        for(let j in cells[i]){
+          if(cells[i][j]){
+            neighborCount = countNeighbors(i,j);
+            if(neighborCount < 2 || neighborCount > 3){
+              newCells[i][j] = 0;
+            }
+            else{
+              newCells[i][j] = 1;
+            }
+          }
+          if(!cells[i][j]){
+            neighborCount = countNeighbors(i,j);
+            if(neighborCount == 3){
+              newCells[i][j] = 1;
+            }
+          }
+        }
+      }
+
+      cells = newCells;
+    }
+
+    function mousePressed() {
+        let x = floor(mouseX/xSize);
+        let y = floor(mouseY/ySize);
+
+        cells[x][y] = (cells[x][y]+1)%2;
+    }
+
+    function draw(){
+      drawBackground();
+      drawCells();
+      tick();
+    }
+  </script>
+</head>
+
+</html>

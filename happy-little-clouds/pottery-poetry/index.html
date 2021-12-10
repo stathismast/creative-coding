@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>one more cup of coffee</title>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  <script>
+    var canvasWidth;
+    var canvasHeight;
+    var framerate = 30;
+
+    var baseColorRed = 220;
+    var baseColorGreen = 215;
+    var baseColorBlue = 205;
+    var colorOffset = 0;
+    var colorFluctuationWidth = 16;
+
+    var minVerticalLinesSpeed = 0.0001;
+    var maxVerticalLinesSpeed = 0.001;
+
+    var backgroundRed;
+    var backgroundGreen;
+    var backgroundBlue;
+
+    var verticalLines = [];
+
+    var xoff = 1;
+
+    var lines = [];
+    var clusters = [];
+    var whirlyDirlies = [];
+
+    class VerticalLine {
+      constructor() {
+        this.width = random(2,7);
+        this.position = random(0, canvasWidth);
+        this.positionOffset = random(0,100000);
+        this.speed = random(minVerticalLinesSpeed, maxVerticalLinesSpeed);
+
+        this.rOffset = random(0,100000);
+        this.r = baseColorRed + (noise(this.rOffset)*6)-3;
+
+        this.gOffset = random(0,100000);
+        this.g = baseColorGreen + (noise(this.gOffset)*6)-3;
+
+        this.bOffset = random(0,100000);
+        this.b = baseColorBlue + (noise(this.bOffset)*6)-3;
+      }
+
+      draw(){
+        stroke(this.r,this.g,this.b,80)
+        strokeWeight(this.width+10);
+        line(this.position, 0, this.position, canvasHeight);
+
+        stroke(this.r,this.g,this.b,160)
+        strokeWeight(this.width+5);
+        line(this.position, 0, this.position, canvasHeight);
+
+        stroke(this.r,this.g,this.b)
+        strokeWeight(this.width);
+        line(this.position, 0, this.position, canvasHeight);
+      }
+
+      move(){
+        this.positionOffset = this.positionOffset + this.speed;
+        this.position = noise(this.positionOffset) * canvasWidth;
+
+        this.rOffset = this.rOffset + 0.01;
+        this.r = max(baseColorRed + (noise(this.rOffset)*6)-3,0);
+
+        this.gOffset = this.gOffset + 0.01;
+        this.g = max(baseColorGreen + (noise(this.gOffset)*6)-3,0);
+
+        this.bOffset = this.bOffset + 0.01;
+        this.g = max(baseColorGreen + (noise(this.gOffset)*6)-3,0);
+      }
+    }
+
+    class ShakyLine {
+      constructor(x1, y1, x2, y2) {
+        this.width = 1.5;
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+
+        this.noiseOffset = random(0,100000);
+      }
+
+      draw(){
+        this.noiseOffset += 0.05;
+        let diffX = this.x1 - this.x2;
+        let rx = map(noise(this.noiseOffset), 0, 1, -diffX/2, diffX/2);
+        let diffY = this.y1 - this.y2;
+        let ry = map(noise(this.noiseOffset), 0, 1, -diffY/2, diffY/2);
+
+
+        stroke(50, 50, 50, 100);
+        noFill();
+        strokeWeight(this.width+2.2);
+        line(this.x1, this.y1, this.x2, this.y2);
+        
+        stroke(0);
+        noFill();
+        strokeWeight(this.width);
+        line(this.x1, this.y1, this.x2, this.y2);
+
+        // stroke(50, 50, 50, 100);
+        // noFill();
+        // strokeWeight(this.width+2);
+        // line(this.x1 + rx, this.y1 + ry, this.x2 + rx, this.y2 + ry);
+
+        stroke(0);
+        noFill();
+        strokeWeight(this.width);
+        line(this.x1 + rx, this.y1 + ry, this.x2 + rx, this.y2 + ry);
+
+        // stroke(50, 50, 50, 100);
+        // noFill();
+        // strokeWeight(this.width+2);
+        // line(this.x1 - rx, this.y1 - ry, this.x2 - rx, this.y2 - ry);
+
+        stroke(0);
+        noFill();
+        strokeWeight(this.width);
+        line(this.x1 - rx, this.y1 - ry, this.x2 - rx, this.y2 - ry);
+      }
+    }
+
+    class GridLine {
+      constructor(x1, y1, x2, y2) {
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+
+        this.pointArray = [];
+        this.pointArray.push({ x: x1, y: y1 });
+        this.pointArray.push({ x: x2, y: y2 });
+        this.lines = [];
+
+        for(let j=0; j<2; j++){
+          for(let i=1; i<this.pointArray.length; i++){
+            this.pointArray.splice(i, 0, { x: (this.pointArray[i-1].x + this.pointArray[i].x)/2 + random(-5,5), y: (this.pointArray[i-1].y + this.pointArray[i].y)/2 + random(-5,5) });
+            i++;
+          }
+        }
+
+        for(let i=1; i<this.pointArray.length; i++){
+          this.lines.push(new ShakyLine(this.pointArray[i-1].x, this.pointArray[i-1].y, this.pointArray[i].x, this.pointArray[i].y));
+        }
+      }
+
+      draw(){
+        for(let i=0; i<this.lines.length; i++){
+          this.lines[i].draw();
+        }
+      }
+    }
+
+    class RedDot {
+      constructor(x,y){
+        this.x = x;
+        this.y = y;
+        this.sizeX = random(5,10);
+        this.sizeY = this.sizeX + random(-2,0);
+        this.red = random(180, 220);
+      }
+
+      move(x,y){
+        this.x += x;
+        this.y += y;
+      }
+
+      draw(){
+        fill(this.red, 0, 0, 100);
+        noStroke();
+        ellipse(this.x, this.y, this.sizeX+2, this.sizeY+2);
+
+        fill(this.red, 0, 0);
+        noStroke();
+        ellipse(this.x, this.y, this.sizeX, this.sizeY);
+      }
+    }
+
+    class Cluster {
+      constructor(x,y){
+        this.noiseOffsetX = random(0,100000);
+        this.noiseOffsetY = random(0,100000);
+        this.x = x;
+        this.y = y;
+        this.size = random(1,5);
+        this.radiusX = random(this.size*20,this.size*30);
+        this.radiusY = random(this.size*15,this.size*25);
+        this.numberOfDots = random(this.size*3,this.size*5);
+        this.dots = [];
+        for(let i=0; i<this.numberOfDots; i++){
+          this.dots.push(new RedDot(this.x + random(-this.radiusX, this.radiusX),this.y + random(-this.radiusY, this.radiusY)))
+        }
+      }
+
+      move(){
+        this.noiseOffsetX += 0.002;
+        this.noiseOffsetY += 0.002;
+        for(let dot of this.dots){
+          dot.move(map(noise(this.noiseOffsetX), 0, 1, -2, 2),map(noise(this.noiseOffsetY), 0, 1, -2, 2));
+        }
+      }
+
+      draw(){
+        for(let dot of this.dots){
+          dot.draw();
+        }
+      }
+    }
+
+    class WhirlyDirly {
+      constructor(x,y){
+        this.x = x;
+        this.y = y;
+        this.radius = 20;
+        this.history = [];
+        this.noiseOffsetX = random(0,100000);
+        this.noiseOffsetY = random(0,100000);
+        this.maxHistorySize = 100;
+
+        while(this.history.length < this.maxHistorySize){
+          this.move();
+        }
+      }
+
+      move(){
+        this.history.push({ x: this.x, y: this.y });
+        this.noiseOffsetX += 0.002;
+        this.noiseOffsetY += 0.002;
+        this.x += map(noise(this.noiseOffsetX), 0, 1, -2, 2);
+        this.y += map(noise(this.noiseOffsetY), 0, 1, -2, 2);
+        if(this.history.length > this.maxHistorySize){
+          this.history.shift();
+        }
+      }
+
+      drawDot(x,y, alpha){
+        fill(0, 230, 200, 10);
+        noStroke();
+        ellipse(x, y, this.radius+5, this.radius+5);
+
+        fill(0, 230, 200);
+        noStroke();
+        ellipse(x, y, this.radius, this.radius);
+      }
+
+      draw(){
+        this.drawDot(this.x, this.y);
+        for(let i in this.history){
+          this.drawDot(this.history[i].x, this.history[i].y);
+        }
+      }
+    }
+
+    function drawBackground(){
+      colorOffset = colorOffset + 0.01;
+      let colorFluctuation = (noise(colorOffset)*colorFluctuationWidth) - colorFluctuationWidth/2;
+      backgroundRed = baseColorRed + colorFluctuation;
+      backgroundGreen = baseColorGreen + colorFluctuation;
+      backgroundBlue = baseColorBlue + colorFluctuation;
+      background(backgroundRed, backgroundGreen, backgroundBlue);
+
+      let noiseScale = 0.05;
+      backgroundColorRange = 20
+      for (let x=0; x < width; x++) {
+        let noiseVal = noise(x*noiseScale);
+        stroke(noiseVal*backgroundColorRange + (backgroundRed - backgroundColorRange/2),noiseVal*backgroundColorRange + (backgroundGreen - backgroundColorRange/2),noiseVal*backgroundColorRange + (backgroundBlue - backgroundColorRange/2));
+        line(x, 0, x, height);
+      }
+    }
+
+    function setupCanvas(){
+      createCanvas(canvasWidth, canvasHeight);
+    }
+
+    function setup(){
+      canvasWidth = windowWidth;
+      canvasHeight = windowHeight;
+
+      setupCanvas();
+
+      frameRate(framerate);
+      drawBackground();
+
+      // for(let i=0; i<canvasWidth/40; i++){
+      //   verticalLines.push(new VerticalLine);
+      // }
+
+      let horizontalStep = 70;
+      for(let i=horizontalStep; i<canvasWidth; i+= horizontalStep){
+        lines.push(new GridLine(i, 0, i, canvasHeight));
+      }
+
+      let verticalStep = 70;
+      for(let i=verticalStep; i<canvasHeight; i+= verticalStep){
+        lines.push(new GridLine(0, i, canvasWidth, i));
+      }
+
+      for(let i=0; i<max((canvasWidth*canvasWidth/125000),6); i++){
+        clusters.push(new Cluster(random(canvasWidth), random(canvasHeight)));
+      }
+
+      for(let i=0; i<max((canvasWidth*canvasWidth/250000),3); i++){
+        whirlyDirlies.push(new WhirlyDirly(random(canvasWidth), random(canvasHeight)));
+      }
+    }
+
+    function mouseClicked(){
+      if(random(-1, 1) > 0)
+        clusters.push(new Cluster(mouseX, mouseY));
+      else
+        whirlyDirlies.push(new WhirlyDirly(mouseX, mouseY));
+    }
+
+    function draw(){
+      drawBackground();
+
+      // for(let x of this.verticalLines){
+      //   x.move();
+      // }
+
+      // for(let x of this.verticalLines){
+      //   x.draw();
+      // }
+
+      for(let x of lines){
+        x.draw();
+      }
+
+      for(let whirlyDirly of whirlyDirlies){
+        whirlyDirly.draw();
+        whirlyDirly.move();
+      }
+
+      for(let cluster of clusters){
+        cluster.draw();
+        cluster.move();
+      }
+
+      text(frameRate(), 20, 20);
+    }
+  </script>
+</head>
+
+</html>

@@ -1,0 +1,3 @@
+neon-mountains (like tiger mountains but with bigger pixels and interesting colors)
+dont-crumble where top left is no crumbleness and bottom right full crumbleness (all with the same color scheme) maybe a 4x4 or 5x5 square ish type ah thing
+oil-paint hope you remember what i mean

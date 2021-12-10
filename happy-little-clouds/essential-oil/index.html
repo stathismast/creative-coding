@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>worth something</title>
+  <!-- <body>
+    <label for="colorpicker">Color Picker:</label>
+    <input type="color" id="colorpicker" value="#0000ff">
+  </body> -->
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+      background-color: #000;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  <script>
+    var canvasWidth;
+    var canvasHeight;
+
+    var framerate = 100;
+    var backgroundColor = "#000";
+
+    var pixelsArray = [];
+    var toBeSet = [];
+
+    var done = false;
+
+    var allowConcurrentDrawing = true;
+    var smoothness = 15;
+    var randomColorChange = 0;
+    var randomColorSmoothness = 5;
+
+    class Pixel {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.r = random(0);
+        this.g = random(0);
+        this.b = random(0);
+        this.a = random(0);
+        this.scheduled = false;
+      }
+
+      isColored(){
+        return this.r || this.g || this.b || this.a;
+      }
+
+      schedule(){
+        this.scheduled = true;
+      }
+
+      isScheduled(){
+        return this.scheduled;
+      }
+
+      randomizeColor(){
+        this.r = random(255);
+        this.g = random(255);
+        this.b = random(255);
+        this.a = 255
+      }
+
+      findNeighbors(){
+        this.neighbors = [];
+        if(this.x > 0 && this.y > 0){
+          this.neighbors.push(pixelsArray[this.x-1][this.y-1]);
+        }
+        if(this.x > 0){
+          this.neighbors.push(pixelsArray[this.x-1][this.y]);
+        }
+        if(this.x > 0 && this.y < canvasHeight-1){
+          this.neighbors.push(pixelsArray[this.x-1][this.y+1]);
+        }
+        if(this.y > 0){
+          this.neighbors.push(pixelsArray[this.x][this.y-1]);
+        }
+        if(this.y < canvasHeight-1){
+          this.neighbors.push(pixelsArray[this.x][this.y+1]);
+        }
+        if(this.x < canvasWidth-1 && this.y > 0){
+          this.neighbors.push(pixelsArray[this.x+1][this.y-1]);
+        }
+        if(this.x < canvasWidth-1){
+          this.neighbors.push(pixelsArray[this.x+1][this.y]);
+        }
+        if(this.x < canvasWidth-1 && this.y < canvasHeight-1){
+          this.neighbors.push(pixelsArray[this.x+1][this.y+1]);
+        }
+      }
+
+      set(){
+        // if(this.x > 1 && this.y > 1){
+        //   neighbors.push(pixelsArray[this.x-2][this.y-2]);
+        // }
+        // if(this.x > 1){
+        //   neighbors.push(pixelsArray[this.x-2][this.y]);
+        // }
+        // if(this.x > 1 && this.y < canvasHeight-2){
+        //   neighbors.push(pixelsArray[this.x-2][this.y+2]);
+        // }
+        // if(this.y > 1){
+        //   neighbors.push(pixelsArray[this.x][this.y-2]);
+        // }
+        // if(this.y < canvasHeight-2){
+        //   neighbors.push(pixelsArray[this.x][this.y+2]);
+        // }
+        // if(this.x < canvasWidth-2 && this.y > 1){
+        //   neighbors.push(pixelsArray[this.x+2][this.y-2]);
+        // }
+        // if(this.x < canvasWidth-2){
+        //   neighbors.push(pixelsArray[this.x+2][this.y]);
+        // }
+        // if(this.x < canvasWidth-2 && this.y < canvasHeight-2){
+        //   neighbors.push(pixelsArray[this.x+2][this.y+2]);
+        // }
+
+        let coloredNeighbors = this.neighbors.filter(x => x.isColored())
+        if(coloredNeighbors.length == 0){
+          this.randomizeColor();
+        }
+        else{
+          this.randomizeColor();
+          let rFactor = smoothness;
+          let gFactor = smoothness;
+          let bFactor = smoothness;
+          let aFactor = smoothness;
+          if(random(1) < randomColorChange){
+            rFactor = randomColorSmoothness;
+            gFactor = randomColorSmoothness;
+            bFactor = randomColorSmoothness;
+            aFactor = randomColorSmoothness;
+          }
+          this.r = (this.r + rFactor*coloredNeighbors.map(x => x.r).reduce((a,b) => a+b)) / (1 + rFactor*coloredNeighbors.length);
+          this.g = (this.g + gFactor*coloredNeighbors.map(x => x.g).reduce((a,b) => a+b)) / (1 + gFactor*coloredNeighbors.length);
+          this.b = (this.b + bFactor*coloredNeighbors.map(x => x.b).reduce((a,b) => a+b)) / (1 + bFactor*coloredNeighbors.length);
+          this.a = (this.a + aFactor*coloredNeighbors.map(x => x.a).reduce((a,b) => a+b)) / (1 + aFactor*coloredNeighbors.length);
+        }
+
+        set(this.x, this.y, color(this.r, this.g, this.b, this.a));
+
+
+        
+        let uncoloredNeighbors = this.neighbors.filter(x => !x.isColored());
+        if(uncoloredNeighbors.length){
+          let randomUncoloredNeighbor = uncoloredNeighbors[Math.floor(Math.random() * uncoloredNeighbors.length)];
+          uncoloredNeighbors.forEach(x => { if(!x.isScheduled() && random(1) < 0.3) { toBeSet.push(x); x.schedule(); } } );
+          if(randomUncoloredNeighbor.isScheduled()) return;
+          toBeSet.push(randomUncoloredNeighbor);
+          randomUncoloredNeighbor.schedule();
+          return;
+        }
+
+        if(toBeSet.length > 0 && !allowConcurrentDrawing) return;
+
+        for(let i=0; i<10; i++){
+          let randomPixel = pixelsArray[parseInt(random(canvasWidth))][parseInt(random(canvasHeight))]
+          if(!randomPixel.isColored()){
+            toBeSet.push(randomPixel);
+            randomPixel.schedule();
+            return
+          }
+        }
+
+
+        let rangeX = 5;
+        let rangeY = 5;
+        for(let i=-1*rangeX; i<rangeX; i++){
+          for(let j=-1*rangeY; j<rangeY; j++){
+            if(pixelsArray[this.x+i] && pixelsArray[this.x+i][this.y+j] && !pixelsArray[this.x+i][this.y+j].isColored()){
+              toBeSet.push(pixelsArray[this.x+i][this.y+j]);
+              pixelsArray[this.x+i][this.y+j].schedule();
+              return;
+            }
+          }
+        }
+
+        // let uncoloredPixelRow = pixelsArray.find(x => x.find(y => !y.isColored()));
+        // if(uncoloredPixelRow){
+        //   let uncoloredPixel = uncoloredPixelRow.find(x => !x.isColored());
+        //   if(uncoloredPixel) toBeSet.push(uncoloredPixel);
+        // }
+
+        // this.r = blendColor(this.r, this.neighbors.map(x => x.r).reduce((a,b) => a+b)/this.neighbors.length, 1, 100*this.neighbors.length);
+        // this.g = blendColor(this.g, this.neighbors.map(x => x.g).reduce((a,b) => a+b)/this.neighbors.length, 1, 100*this.neighbors.length);
+        // this.b = blendColor(this.b, this.neighbors.map(x => x.b).reduce((a,b) => a+b)/this.neighbors.length, 1, 100*this.neighbors.length);
+
+      }
+    }
+
+    function blendColor(a,b,ap,bp){
+      return (a*ap + b*bp)/(ap+bp);
+    }
+
+    function drawBackground(){
+      background(backgroundColor);
+    }
+
+    function setupCanvas(){
+      calculateCanvas();
+      createCanvas(canvasWidth, canvasHeight);
+    }
+
+    // function windowResized() {
+    //   calculateCanvas();
+    //   resizeCanvas(canvasWidth, canvasHeight);
+    //   console.log("Window Resized to " + canvasWidth + "x" + canvasHeight);
+    //   draw();
+    // }
+
+    function calculateCanvas(){
+      canvasWidth = windowWidth;
+      canvasHeight = windowHeight;
+    }
+
+    function handleParams(){
+      let params = getURLParams();
+      console.log('URL Parameters: ' + JSON.stringify(params));
+      // if(['True','TRUE','true','T','t','y','yes','Yes','YES'].includes(params.fps)) showFrameRate = true;
+      // if(['False','FALSE','false','F','f','n','no','No','NO'].includes(params.fps)) showFrameRate = false;
+    }
+
+    function intializePixels(){
+      pixelsArray = new Array(canvasWidth).fill(0).map(() => new Array(canvasHeight).fill(0));
+
+      pixelsArray[0][0] = new Pixel(0,0);
+      for(let i=1; i<canvasWidth; i++)
+        pixelsArray[i][0] = new Pixel(i,0);
+      for(let j=1; j<canvasHeight; j++)
+        pixelsArray[0][j] = new Pixel(0,j);
+      for(let j=1; j<canvasHeight; j++){
+        for(let i=1; i<canvasWidth; i++){
+          pixelsArray[i][j] = new Pixel(i,j);
+        }
+      }
+
+      for(let j=0; j<canvasHeight; j++){
+        for(let i=0; i<canvasWidth; i++){
+          pixelsArray[i][j].findNeighbors();
+        }
+      }
+
+      let randomPixel = { x: parseInt(random(canvasWidth)), y: parseInt(random(canvasHeight)) };
+      pixelsArray[randomPixel.x][randomPixel.y].set();
+    }
+
+    function setup(){
+      pixelDensity(2);
+      setupCanvas();
+      if(framerate)
+        frameRate(framerate);
+      else noLoop();
+
+      handleParams();
+
+      intializePixels();
+    }
+
+    function draw(){
+      // console.log("Drawing...")
+      drawBackground();
+
+      if(done){
+        console.log('Done')
+        frameRate(0);
+        noLoop();
+        updatePixels();
+        return;
+      }
+
+      if(toBeSet.length){
+        let frameStep = 1000;
+        while(toBeSet.length && frameStep > 0){
+          toBeSet.shift().set();
+          frameStep -= 1;
+        }
+      }
+      else{
+        for(let j=0; j<canvasHeight; j++){
+          for(let i=0; i<canvasWidth; i++){
+            if(!pixelsArray[i][j].isColored())
+              pixelsArray[i][j].set();
+          }
+        }
+        done = true;
+      }
+
+
+      // for(let j=0; j<canvasHeight; j++){
+      //   for(let i=0; i<canvasWidth; i++){
+      //     pixelsArray[i][j].set();
+      //   }
+      // }
+      updatePixels();
+
+      // for(let j=0; j<canvasHeight; j++){
+      //   for(let i=0; i<canvasWidth; i++){
+      //     let r = random(255);
+      //     let g = random(255);
+      //     let b = random(255);
+      //     if(i && j){
+      //       let prev = get(i-1, j-1);
+      //       r = (random(255) + 4*prev[0])/5;
+      //       g = (random(255) + 4*prev[1])/5;
+      //       b = (random(255) + 4*prev[2])/5;
+      //     }
+      //     let c = color(r, g, b);
+      //     set(i,j, c);
+      //   }
+      // }
+      // updatepixelsArray();
+      // console.log("Done.")
+
+      // let c = get();
+      // image(c, 0, 0, canvasWidth*2, canvasHeight*2)
+
+      
+      textSize(12);
+      fill(255,255,0);
+      stroke(255,255,0);
+      text(parseInt(frameRate()), 20, 20);
+
+    }
+  </script>
+</head>
+
+</html>

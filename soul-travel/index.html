@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>tEARING mE aPART</title>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  <script>
+    var canvasWidth;
+    var canvasHeight;
+
+    var stars = [];
+
+    var minSize = 2;
+    var maxSize = 7;
+    var spawnSize = 20;
+    var rotationRate = 0.00005;
+    var speedupRate = 0.05;
+    var distanceSpeedupFactor = 0.00002;
+    var chaos = 1;
+    var redness = 6;
+    var maxStars = 600;
+    var starSpawnRate = 3;
+
+    var globalShakeX = 0;
+    var globalShakeY = 0;
+
+    var pulseRate = 12;
+    var pulsePhase;
+    var pulseSpeed;
+
+    class Star {
+      constructor() {
+        this.x = canvasWidth/2 + random(-spawnSize,spawnSize);
+        this.y = canvasHeight/2 + random(-spawnSize,spawnSize);
+        this.xPrev = this.x;
+        this.yPrev = this.y;
+        this.radius = random(minSize,maxSize);
+
+        this.r = random(100,255);
+        this.g = 255;
+        this.b = 255;
+
+        this.angle = random(0,2*3.14159265);
+        this.distance = 0;
+        this.xSpeedup = 0;
+        this.ySpeedup = 0;
+
+        this.calculateVelocities();
+      }
+
+      calculateDistance(){
+        this.distance = (this.x - canvasWidth/2)*(this.x - canvasWidth/2) + (this.y - canvasHeight/2)*(this.y - canvasHeight/2)
+      }
+
+      calculateNewAngle(){
+        this.angle += rotationRate * this.distance;
+      }
+
+      calculateSpeedup(){
+        this.xSpeedup = this.xVelocity - this.xVelocityOriginal
+        this.ySpeedup = this.yVelocity - this.yVelocityOriginal
+      }
+
+      calculateVelocities(){
+        this.xVelocityOriginal = cos(this.angle)*this.radius;
+        this.yVelocityOriginal = sin(this.angle)*this.radius;
+        this.xVelocity = this.xVelocityOriginal + this.xSpeedup;
+        this.yVelocity = this.yVelocityOriginal + this.ySpeedup;
+        this.xVelocity *= 1 + this.distance * distanceSpeedupFactor;
+        this.yVelocity *= 1 + this.distance * distanceSpeedupFactor;
+      }
+
+      updatePosition(){
+        this.x += this.xVelocity * speedupRate;
+        this.y += this.yVelocity * speedupRate;
+      }
+
+      addJitter(){
+        this.x += random(-0.5,0.5);
+        this.y += random(-0.5,0.5);
+      }
+
+      addGlobalShake(){
+        this.x += globalShakeX;
+        this.y += globalShakeY;
+      }
+
+      addPulse(){
+        if(pulsePhase == 1){
+          this.x += cos(this.angle) * pulseSpeed * chaos;
+          this.y += sin(this.angle) * pulseSpeed * chaos;
+        }
+        else{
+          this.x -= cos(this.angle) * pulseSpeed * chaos/(1+chaos/3);
+          this.y -= sin(this.angle) * pulseSpeed * chaos/(1+chaos/3);
+        }
+      }
+
+      move() {
+        this.xPrev = this.x;
+        this.yPrev = this.y;
+
+        this.updatePosition();
+        this.addJitter();
+        this.addGlobalShake();
+        this.addPulse();
+
+        this.calculateDistance();
+        this.calculateNewAngle();
+        this.calculateSpeedup();
+        this.calculateVelocities();
+      }
+
+      getRed(){
+        return min(this.r + chaos*redness, 255);
+      }
+
+      getGreen(){
+        return max(this.g - 4*chaos*redness, 0);
+      }
+
+      getBlue(){
+        return max(this.b - 4*chaos*redness, 0);
+      }
+
+      draw() {
+        fill(this.getRed(), this.getGreen(), this.getBlue(), 100);
+        noStroke();
+        ellipse(this.x, this.y, this.radius+2, this.radius+2);
+
+        fill(this.getRed(), this.getGreen(), this.getBlue());
+        noStroke();
+        ellipse(this.x, this.y, this.radius, this.radius);
+
+        // strokeWeight(this.radius);
+        // stroke(this.getRed(), this.getGreen(), this.getBlue(), 100);
+        // line(this.x, this.y, this.xPrev, this.yPrev);
+
+        // strokeWeight(this.radius+2);
+        // stroke(this.getRed(), this.getGreen(), this.getBlue());
+        // line(this.x, this.y, this.xPrev, this.yPrev);
+      }
+    }
+
+    function drawBackground(){
+      background(0);
+    }
+
+    function setupCanvas(){
+      createCanvas(canvasWidth, canvasHeight);
+    }
+
+    function setup(){
+      canvasWidth = windowWidth;
+      canvasHeight = windowHeight;
+
+      setupCanvas();
+
+      frameRate(30);
+    }
+
+    function mouseClicked() {
+      chaos += 1;
+    }
+
+    function generateGlobalShake(){
+      this.globalShakeX = random(-chaos,chaos);
+      this.globalShakeY = random(-chaos,chaos);
+    }
+
+    function moveStars(){
+      for(let star of stars){
+        star.move();
+      }
+    }
+
+    function drawStars(){
+      for(let star of stars){
+        star.draw();
+      }
+    }
+
+    function addNewStars(){
+      for(let i=0; i<starSpawnRate; i++)
+        stars.push(new Star());
+    }
+
+    function trimStarArray(){
+      if(stars.length > maxStars) stars.splice(0,starSpawnRate);
+    }
+
+    function calculatePulse(){
+      let rate = max(1, pulseRate - chaos);
+      pulsePhase = frameCount%(rate*4) - (rate*2) < 0?1:0;
+      pulseSpeed = (rate - abs(abs(frameCount%(rate*4) - (rate*2)) - rate)) / rate;
+    }
+
+    function draw(){
+      drawBackground();
+
+      generateGlobalShake();
+
+      moveStars();
+      drawStars();
+
+      addNewStars();
+      trimStarArray();
+
+      calculatePulse();
+    }
+  </script>
+</head>
+
+</html>

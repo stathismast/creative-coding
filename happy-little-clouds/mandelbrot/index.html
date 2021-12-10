@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>one more cup of coffee</title>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  <script>
+    var canvasWidth;
+    var canvasHeight;
+    var framerate = 30;
+    
+
+    var zoom = 1;
+    var xCenter = -0.75;
+    var yCenter = 0;
+    var xOffset = 2 / zoom;
+    var yOffset = 1.25 / zoom;
+
+    function drawBackground(){
+      background(0);
+    }
+
+    function setupCanvas(){
+      createCanvas(canvasWidth, canvasHeight);
+    }
+
+    function setup(){
+      canvasWidth = windowWidth;
+      canvasHeight = windowHeight;
+
+      setupCanvas();
+      frameRate(framerate);
+      drawBackground();
+      noLoop();
+    }
+
+    function palette(t){
+      // http://iquilezles.org/www/articles/palettes/palettes.htm
+      // color(t) = a + b * cos[2π(c*t+d)]
+      const a = { x:0.5, y:0.5, z:0.5 }
+      const b = { x:0.5, y:0.5, z:0.5 }
+      const c = { x:1.0, y:1.0, z:1.0 }
+      const d = { x:0.0, y:0.33, z:0.67 }
+
+      let color = {
+        r: (a.x + b.x * cos((3.14159265*2) * (c.x * t + d.x))) * 255,
+        g: (a.y + b.y * cos((3.14159265*2) * (c.y * t + d.y))) * 255,
+        b: (a.z + b.z * cos((3.14159265*2) * (c.z * t + d.z))) * 255
+      }
+
+      return color;
+    }
+
+    function mouseClicked(){
+      console.log('mouseClicked')
+      xCenter = map(mouseX, 0, canvasWidth, xCenter-xOffset, xCenter+xOffset);
+      yCenter = map(mouseY, 0, canvasHeight, yCenter-yOffset, yCenter+yOffset);
+      zoom += 1;
+      zoom
+      xOffset = 1.75 / pow(zoom, zoom);
+      yOffset = 1 / pow(zoom, zoom);
+
+      draw();
+    }
+
+    const lerp = (x, y, a) => x * (1 - a) + y * a;
+
+    function draw(){
+      console.log('drawing begins')
+      for (let i = 0; i < canvasWidth; i++) {
+        for (let j = 0; j < canvasHeight; j++) {
+          let x0 = map(i, 0, canvasWidth, xCenter-xOffset, xCenter+xOffset);
+          let y0 = map(j, 0, canvasHeight, yCenter-yOffset, yCenter+yOffset);
+          let x = 0.0;
+          let y = 0.0;
+          let iteration = 0;
+          let max_iteration = 200;
+          while (x*x + y*y <= 2*2 && iteration < max_iteration){
+            let xtemp = x*x - y*y + x0;
+            y = 2*x*y + y0;
+            x = xtemp;
+            iteration += 1;
+          }
+
+          if(iteration < max_iteration){
+            let log_zn = log(x*x + y*y) / 2;
+            let nu = log(log_zn / log(2)) / log(2);
+            iteration = iteration + 1 - nu
+          }
+
+          let norm1 = map(floor(iteration), 0, max_iteration, 0, 1);
+          let bright1 = map(sqrt(norm1), 0, 1, 0, 255);
+          let norm2 = map(floor(iteration)+1, 0, max_iteration, 0, 1);
+          let bright2 = map(sqrt(norm2), 0, 1, 0, 255);
+          if(iteration != max_iteration){
+
+            let color1 = palette(bright1)
+            let color2 = palette(bright2)
+
+            let c = { r: lerp(color1.r, color2.r, iteration%1), g: lerp(color1.g, color2.g, iteration%1), b: lerp(color1.b, color2.b, iteration%1) };
+
+            // let c = palette(bright);
+            set(i, j, color(c.r, c.g, c.b));
+          }
+          else{
+            set(i,j,0);
+          }
+        }
+      }
+      console.log('updating pixels')
+      updatePixels();
+    }
+  </script>
+</head>
+
+</html>

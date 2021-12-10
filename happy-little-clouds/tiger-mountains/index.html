@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>one more cup of coffee</title>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  <script>
+    var canvasWidth;
+    var canvasHeight;
+    var framerate = 30;
+
+    var zoom = 70;
+    var noiseOffset;
+
+    function drawBackground(){
+      background(0);
+    }
+
+    function setupCanvas(){
+      createCanvas(canvasWidth, canvasHeight);
+    }
+
+    function setup(){
+      canvasWidth = windowWidth;
+      canvasHeight = windowHeight;
+
+      setupCanvas();
+      frameRate(framerate);
+      drawBackground();
+      noiseOffset = random(1,100000);
+    }
+
+    function draw(){
+      console.log('drawing begins')
+      for (let i = 0; i < canvasWidth; i++) {
+        for (let j = 0; j < canvasHeight; j++) {
+          let val = map(noise(i/zoom+noiseOffset,j/zoom+noiseOffset),0,1,0,255);
+          // if(val < 150)
+          //   set(i,j, color(0, 0, 255));
+          // else
+          //   set(i,j, color(val, 0, 0));
+          if(val > 0+frameCount%255 && val <= 10+frameCount%255)
+            set(i,j,color(255, 123, 0));
+          else
+            set(i,j,0);
+        }
+      }
+      console.log('updating pixels')
+      updatePixels();
+      
+      if(frameCount%255 == 0)
+        noiseOffset = random(1,100000);
+
+      stroke(255);
+      text(frameRate(), 20, 20);
+    }
+  </script>
+</head>
+
+</html>

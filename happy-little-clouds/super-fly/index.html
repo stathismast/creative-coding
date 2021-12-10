@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>blur me</title>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  <script src="Fly.js"></script>
+  <script>
+    var canvasWidth;
+    var canvasHeight;
+    var framerate = 30;
+
+    var orbs = [];
+
+    var xTarget = 1000;
+    var yTarget = 500;
+    var xOffset;
+    var yOffset;
+    var targetSpeed = 4;
+
+    function drawBackground(){
+      background(0);
+    }
+
+    function setupCanvas(){
+      createCanvas(canvasWidth, canvasHeight);
+    }
+
+    function setup(){
+      canvasWidth = windowWidth;
+      canvasHeight = windowHeight;
+
+      setupCanvas();
+      frameRate(framerate);
+      drawBackground();
+
+      for(let i=0; i<100; i++){
+        orbs.push(new Fly(random(canvasWidth), random(canvasHeight), { 
+                                      wobbleWidth: 7,
+                                      wobbleSpeed: 5,
+                                      maxSpeed: 10,
+                                      width: 4,
+                                      blurRatio: 4,
+                                      color: { r: random(255,255), g: random(255,255), b: random(255,255) },
+                                      blur: true
+                                    }));
+      }
+      // cursor('none');
+      xOffset = random(100000);
+      yOffset = random(100000);
+    }
+
+    function mouseClicked(){
+      xTarget = mouseX;
+      yTarget = mouseY;
+    }
+
+    // function averageFlyPosition(){
+    //   let avgX = 0;
+    //   let avgY = 0;
+
+    //   for(let o of orbs){
+    //     avgX += o.x;
+    //     avgY += o.y;
+    //   }
+    //   avgX /= orbs.length;
+    //   avgY /= orbs.length;
+
+    //   return { x: avgX, y: avgY }
+    // }
+
+    function draw(){
+      drawBackground();
+
+      // let avgPos = averageFlyPosition();
+
+
+
+      // let distanceFromAverage = sqrt((xTarget-avgPos.x)*(xTarget-avgPos.x) + (yTarget-avgPos.y)*(yTarget-avgPos.y))
+
+      // if(xTarget > avgPos.x && xTarget > 0 && xTarget < canvasWidth && yTarget > 0 && yTarget < canvasHeight)
+      //   xTarget -= min(-distanceFromAverage/20, -20) * abs(xTarget - avgPos.x) / (abs(xTarget - avgPos.x)+abs(yTarget - avgPos.y));
+      // else
+      //   xTarget -= max(distanceFromAverage/20, 20) * abs(xTarget - avgPos.x) / (abs(xTarget - avgPos.x)+abs(yTarget - avgPos.y));
+
+      // if(yTarget > avgPos.y && xTarget > 0 && xTarget < canvasWidth && yTarget > 0 && yTarget < canvasHeight)
+      //   yTarget -= min(-distanceFromAverage/20, -20) * abs(yTarget - avgPos.y) / (abs(xTarget - avgPos.x)+abs(yTarget - avgPos.y));
+      // else
+      //   yTarget -= max(distanceFromAverage/20, 20) * abs(yTarget - avgPos.y) / (abs(xTarget - avgPos.x)+abs(yTarget - avgPos.y));
+
+
+      xOffset += (targetSpeed)/100;
+      yOffset += (targetSpeed)/100;
+      xTarget = map(noise(xOffset), 0, 1, 0, canvasWidth);
+      yTarget = map(noise(yOffset), 0, 1, 0, canvasHeight);
+
+
+      // xTarget = mouseX;
+      // yTarget = mouseY;
+
+      for(let orb of this.orbs)
+        orb.draw();
+      for(let orb of this.orbs){
+        orb.updateTarget(xTarget, yTarget);
+        orb.move();
+      }
+
+      if(frameCount%90 == 0)
+        orbs.push(new Fly(random(canvasWidth), random(canvasHeight), { 
+                                      wobbleWidth: 7,
+                                      wobbleSpeed: 5,
+                                      maxSpeed: 10,
+                                      width: 4,
+                                      blurRatio: 4,
+                                      color: { r: random(255,255), g: random(255,255), b: random(255,255) },
+                                      blur: true
+                                    }));
+
+      let circleCount = 100;
+      for(let i=0; i<circleCount-1; i++){
+        strokeWeight(1);
+        stroke(230, 255, 250, i);
+        // noStroke();
+        noFill();
+        ellipse(xTarget, yTarget, circleCount-i, circleCount-i);
+      }
+      noStroke();
+      fill(230, 255, 250, 120);
+      ellipse(xTarget, yTarget, 2, 2);
+
+      // stroke(255);
+      // text(frameRate(), 20, 20);
+
+      // stroke(255);
+      // text(JSON.stringify(averageFlyPosition()), 20, 20);
+    }
+  </script>
+</head>
+
+</html>

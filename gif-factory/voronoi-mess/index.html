@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>very jittery</title>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+    <script src="../CCapture.all.min.js"></script>
+    <script src="rhill-voronoi-core.js"></script>
+    <script src="p5.voronoi.js"></script>
+    <script>
+      var capturer = new CCapture( {
+        framerate: 30,
+        format: 'webm',
+        verbose: true
+      } );
+      var gifLength = 900
+      var canvas;
+        let canvasWidth;
+        let canvasHeight;
+        let framerate = 30;
+  
+        let circleSize = 100;
+  
+        let sites = [];
+  
+        class Site {
+          constructor(){
+            this.x = canvasWidth/2 + random(-circleSize,circleSize);
+            this.y = canvasHeight/2 + random(-circleSize,circleSize);
+            while(sqrt(pow(this.x - canvasWidth/2,2) + pow(this.y - canvasHeight/2,2)) > circleSize){
+              this.x = canvasWidth/2 + random(-circleSize,circleSize);
+              this.y = canvasHeight/2 + random(-circleSize,circleSize);
+            }
+            this.rgbCell = 0;
+            this.rgbSite = color(random(255),random(255),random(255));
+            this.size = random(1,5);
+            this.movingOutward = random(100) > 40;
+            this.angle = random(10);
+  
+            this.xOffset = random(100000);
+            this.yOffset = random(100000);
+          }
+  
+          set(){
+            voronoiSite(this.x, this.y, this.rgbCell);
+          }
+  
+          draw(){
+            noStroke();
+            fill(255);
+            ellipse(this.x, this.y, this.size);
+          }
+  
+          changeAngle(val){
+            this.angle += val;
+          }
+  
+          move(){
+            this.x += random(-1,1) + (noise(this.xOffset + frameCount/100) - 0.475)*2;
+            this.y += random(-1,1) + (noise(this.yOffset + frameCount/100) - 0.475)*2;
+            if(sqrt(pow(this.x - canvasWidth/2,2) + pow(this.y - canvasHeight/2,2)) > circleSize){
+              if(this.x < canvasWidth/2) this.x += 2;
+              if(this.x > canvasWidth/2) this.x -= 2;
+              if(this.y < canvasHeight/2) this.y += 2;
+              if(this.y > canvasHeight/2) this.y -= 2;
+              this.angle += 1;
+            }
+            else if (sqrt(pow(this.x - canvasWidth/2,2) + pow(this.y - canvasHeight/2,2)) < circleSize*0.9 && this.movingOutward){
+              this.x += cos(this.angle);
+              this.y += sin(this.angle);
+            }
+          }
+        }
+  
+        function drawBackground(){
+          background(0);
+        }
+  
+  
+      function setupCanvas(){
+        canvas = createCanvas(canvasWidth, canvasHeight).canvas;
+      }
+  
+      function setup(){
+          canvasWidth = windowWidth;
+          canvasHeight = windowHeight;
+  
+          frameRate(framerate);
+  
+          setupCanvas();
+          noSmooth();
+  
+          voronoiCellStroke(255);
+          voronoiCellStrokeWeight(0.5);
+          voronoiSiteStroke(255);
+  
+          for(let i=0; i<180; i++){
+            sites.push(new Site())
+          }
+          
+      }
+  
+      
+      function mouseClicked(){
+          for(let s of sites){
+            s.changeAngle(random(3,14159265 - 1, 3,14159265 + 1));
+          }
+  
+          var cellId = voronoiGetSite(mouseX, mouseY, false);
+          if(cellId !== undefined){
+            console.log(cellId);
+            console.log(JSON.stringify(voronoiGetCells()[cellId]));
+            let site = voronoiGetSites().find(x => x.voronoiId == cellId);
+            console.log(JSON.stringify(site));
+            console.log(JSON.stringify(sites.map(s => [s.x, site.x, s.y, site.y]).filter(r => abs(r[0] - r[1]) + abs(r[2] - r[3]) < 2)));
+            voronoiRemoveSite(cellId);
+            sites.splice(cellId, 1);
+          }
+        }
+  
+      function draw(){
+          drawBackground();
+          voronoiClearSites();
+  
+          for(let s of sites){
+            s.set();
+          }
+  
+          voronoi(canvasWidth, canvasHeight, true);
+          voronoiDraw(0, 0, true, false);
+  
+          for(let s of sites){
+            s.draw();
+          }
+  
+          for(let s of sites){
+            s.move();
+          }
+  
+        if(frameCount == 1){
+          capturer.start();
+        }
+        if(frameCount < gifLength){
+          capturer.capture(canvas);
+        }
+        else if(frameCount == gifLength){
+          capturer.stop();
+          capturer.save();
+        }
+      }
+    </script>
+  </head>
+  </html>

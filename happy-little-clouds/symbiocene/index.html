@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>blur me</title>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  <script src="Fly.js"></script>
+  <script>
+
+    var canvasWidth;
+    var canvasHeight;
+    var framerate = 30;
+
+    var orbs = [];
+
+    var xTarget = 1000;
+    var yTarget = 500;
+
+    function drawBackground(){
+      background(0);
+    }
+
+    function setupCanvas(){
+      createCanvas(canvasWidth, canvasHeight);
+    }
+
+    function setup(){
+      canvasWidth = windowWidth;
+      canvasHeight = windowHeight;
+
+      setupCanvas();
+      frameRate(framerate);
+      drawBackground();
+
+      for(let i=0; i<25; i++){
+        orbs.push(new Fly(100, 50, { 
+                                      wobbleWidth: 7,
+                                      wobbleSpeed: 5,
+                                      maxSpeed: 10,
+                                      width: 4,
+                                      blurRatio: 8,
+                                      color: { r: 255, g: 255, b: 255 },
+                                      blur: true
+                                    }));
+      }
+      cursor('none')
+    }
+
+    function mouseClicked(){
+      xTarget = mouseX;
+      yTarget = mouseY;
+    }
+
+    function draw(){
+      drawBackground();
+
+      for(let orb of this.orbs)
+        orb.draw();
+      for(let orb of this.orbs){
+        orb.updateTarget(xTarget, yTarget);
+        orb.move();
+      }
+
+      // if(frameCount%1000 == 0)
+      //   orbs.push(new Fly(100, 50, 50));
+
+      xTarget = mouseX;
+      yTarget = mouseY;
+
+      let circleCount = 100;
+      for(let i=0; i<circleCount-1; i++){
+        strokeWeight(1);
+        stroke(230, 255, 250, i);
+        // noStroke();
+        noFill();
+        ellipse(xTarget, yTarget, circleCount-i, circleCount-i);
+      }
+      noStroke();
+      fill(230, 255, 250, 120);
+      ellipse(xTarget, yTarget, 2, 2);
+
+      stroke(255);
+      text(frameRate(), 20, 20);
+    }
+  </script>
+</head>
+
+</html>

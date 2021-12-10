@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>have to get through it</title>
+  <!-- <body>
+    <label for="colorpicker">Color Picker:</label>
+    <input type="color" id="colorpicker" value="#0000ff">
+  </body> -->
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+      background-color: #000;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  <script>
+    var canvasWidth;
+    var canvasHeight;
+    var shapeWidth;
+    var shapeHeight;
+    var horizontalSpacing;
+    var verticalSpacing;
+    var framerate = 30;
+
+    var cols = 10;
+    var rows = 10;
+    var padding = 20;
+
+    var useFixedDensity = true;
+    var fixedDensity = 15;
+
+
+    var showShapeOutline = true;
+    var showFrameRate = true;
+    var showGridDimensions = true;
+    var showShapeDimensions = true;
+
+    var backgroundColor = "#000";
+
+    var pixels = []
+
+    function drawBackground(){
+      background(backgroundColor);
+    }
+
+    function setupCanvas(){
+      createCanvas(canvasWidth, canvasHeight);
+    }
+
+    function windowResized() {
+      calculateShape();
+      calculatePixels();
+      resizeCanvas(canvasWidth, canvasHeight);
+    }
+
+    function calculateShape(){
+      canvasWidth = windowWidth;
+      canvasHeight = windowHeight-4;
+
+      shapeWidth = canvasWidth-(padding*2);
+      shapeHeight = canvasHeight-(padding*2);
+      if(useFixedDensity){
+        cols = parseInt(shapeWidth/fixedDensity);
+        rows = parseInt(shapeHeight/fixedDensity);
+      }
+      horizontalSpacing = shapeWidth/cols;
+      verticalSpacing = shapeHeight/rows;
+    }
+
+    function calculatePixels(){
+      pixels = [];
+      for(let i=0; i<=rows; i++){
+        pixels.push([])
+        let horizontalOffet = 0
+        for(let j=0; j<=cols; j++){
+          pixels[i].push({ x: padding+j*horizontalSpacing, y: padding+i*verticalSpacing })
+        }
+      }
+    }
+
+    function setup(){
+      calculateShape();
+      calculatePixels();
+      setupCanvas();
+      if(framerate)
+        frameRate(framerate);
+      else noLoop();
+      draw();
+    }
+
+    function draw(){
+      drawBackground();
+
+
+      if(showShapeOutline){
+        fill(backgroundColor);
+        stroke('red');
+        rect(padding, padding, shapeWidth, shapeHeight);
+      }
+
+      // text(document.getElementById("colorpicker").value, 20, 80);
+
+      noStroke();
+      for(let i=0; i<rows; i++){
+        for(let j=0; j<cols; j++){
+          // fill(color(random(255),random(255),random(255)));
+          fill(color(50));
+          rect(pixels[i][j].x, pixels[i][j].y, horizontalSpacing, verticalSpacing);
+        }
+      }
+
+      textSize(12);
+      fill(255,255,0);
+      stroke(backgroundColor);
+      if(showFrameRate) text(parseInt(frameRate()), 20, 20);
+      if(showGridDimensions) text(parseInt(rows) + ' x ' + parseInt(cols), 20, 40);
+      if(showShapeDimensions) text(parseInt(shapeWidth) + ' x ' + parseInt(shapeHeight), 20, 60);
+    }
+  </script>
+</head>
+
+</html>

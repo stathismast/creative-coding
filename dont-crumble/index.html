@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>now more than ever</title>
+  <!-- <body>
+    <label for="colorpicker">Color Picker:</label>
+    <input type="color" id="colorpicker" value="#0000ff">
+  </body> -->
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+      background-color: #00203F;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  <script>
+    var canvasWidth;
+    var canvasHeight;
+
+    var framerate = 0;
+    var useHorizontalOffset = true;
+    var showDots = false;
+    var showFrameRate = false;
+
+    var backgroundColor = "#00203F";
+
+    var palettes = [];
+    var crumbles = [];
+
+    var outsidePadding = 20;
+    var shapeWidth;
+    var shapeHeight;
+    var cols;
+    var rows;
+    var availableHorizontalSpace;
+    var availableVerticalSpace;
+    var crumbleWidth = 500;
+    var crumbleHeight = 500;
+    var crumbleCount;
+    
+    var colorIndex = 0;
+
+    function drawTriangle(x1, y1, x2, y2, x3, y3, color){
+      stroke(backgroundColor);
+      fill(color);
+      triangle(x1, y1, x2, y2, x3, y3)
+    }
+
+    class Crumble {
+      constructor(x, y, width, height, colors, index) {
+        this.x = x + width*0.1;
+        this.y = y + height*0.1;
+        this.width = width * 0.8;
+        this.height = height * 0.8;
+        this.colors = colors;
+        // this.wobblyness = 2*(index)*(index)/((cols+rows)*(cols+rows));
+        this.wobblyness = 1*(index)/(cols+rows);
+        this.density = 30;
+        this.cols = parseInt(this.width/this.density);
+        this.rows = parseInt(this.height/this.density);
+        this.horizontalSpacing = this.width/this.cols;
+        this.verticalSpacing = this.height/this.rows;
+
+        this.index = index;
+
+        this.dots = [];
+        for(let i=0; i<=this.rows; i++){
+          this.dots.push([])
+          let horizontalOffet = useHorizontalOffset ? i%2 == 0 ? -1*this.horizontalSpacing/4 : this.horizontalSpacing/4 : 0
+          for(let j=0; j<=this.cols; j++){
+            let c = this.colors[parseInt(random(this.colors.length))];
+            this.dots[i].push({ x: this.x + j*this.horizontalSpacing+horizontalOffet + random(-this.horizontalSpacing*this.wobblyness,this.horizontalSpacing*this.wobblyness), y: this.y + i*this.verticalSpacing + random(-this.verticalSpacing*this.wobblyness,this.verticalSpacing*this.wobblyness), color: c })
+          }
+        }
+      }
+
+      draw(){
+        for(let i=0; i<this.rows; i+=2){
+          for(let j=0; j<this.cols; j++){
+            drawTriangle(this.dots[i][j].x, this.dots[i][j].y, this.dots[i+1][j].x, this.dots[i+1][j].y, this.dots[i][j+1].x, this.dots[i][j+1].y, this.dots[i][j].color);
+          }
+        }
+        for(let i=1; i<this.rows; i+=2){
+          for(let j=0; j<this.cols; j++){
+            drawTriangle(this.dots[i][j].x, this.dots[i][j].y, this.dots[i+1][j].x, this.dots[i+1][j].y, this.dots[i+1][j+1].x, this.dots[i+1][j+1].y, this.dots[i][j].color);
+          }
+        }
+        for(let i=1; i<=this.rows; i+=2){
+          for(let j=0; j<this.cols; j++){
+            drawTriangle(this.dots[i][j].x, this.dots[i][j].y, this.dots[i-1][j+1].x, this.dots[i-1][j+1].y, this.dots[i][j+1].x, this.dots[i][j+1].y, this.dots[i][j].color);
+          }
+        }
+        for(let i=1; i<this.rows; i+=2){
+          for(let j=1; j<=this.cols; j++){
+            drawTriangle(this.dots[i][j].x, this.dots[i][j].y, this.dots[i+1][j].x, this.dots[i+1][j].y, this.dots[i][j-1].x, this.dots[i][j-1].y, this.dots[i][j].color);
+          }
+        }
+        if(showDots){
+          stroke('red');
+          fill('yellow');
+          for(let i=0; i<=this.rows; i++){
+            for(let j=0; j<=this.cols; j++){
+              circle(this.dots[i][j].x, this.dots[i][j].y, 5);
+            }
+          }
+        }
+
+        // textSize(12);
+        // fill(255,255,0);
+        // stroke(backgroundColor);
+        // text(this.index, this.x - this.width*0.1, this.y - this.height*0.1, 20);
+        }
+    }
+
+    function drawBackground(){
+      background(backgroundColor);
+    }
+
+    function setupCanvas(){
+      calculateCanvas();
+      createCanvas(canvasWidth, canvasHeight);
+    }
+
+    function windowResized() {
+      calculateCanvas();
+      resizeCanvas(canvasWidth, canvasHeight);
+    }
+
+    function calculateCanvas(){
+      canvasWidth = windowWidth;
+      canvasHeight = windowHeight-4;
+
+      crumbleWidth = canvasHeight * 0.23;
+      crumbleHeight = canvasHeight * 0.23;
+
+
+      shapeWidth = canvasWidth-(outsidePadding*2);
+      shapeHeight = canvasHeight-(outsidePadding*2);
+
+      cols = parseInt(shapeWidth/crumbleWidth);
+      availableHorizontalSpace = shapeWidth/cols - crumbleWidth;
+      rows = floor(shapeHeight / crumbleHeight);
+      availableVerticalSpace = shapeHeight/rows - crumbleHeight;
+    }
+
+    function mouseClicked(){
+      frameCount += 1;
+      console.log(frameCount);
+      draw();
+    }
+
+    function keyPressed(){
+      frameCount += 1;
+      colorIndex -= rows*cols;
+      draw();
+    }
+
+    function setup(){
+      setupCanvas();
+      if(framerate)
+        frameRate(framerate);
+      else noLoop();
+      setupPalettes();
+    }
+
+    function draw(){
+      drawBackground();
+
+      dynamicSceneIncreasing();
+
+      for(let c of crumbles)
+        c.draw();
+
+      drawInfo();
+    }
+
+    function drawInfo(){
+      textSize(12);
+      fill(255,255,0);
+      stroke(backgroundColor);
+      if(showFrameRate) text(parseInt(frameRate()), 20, 20);
+      
+      // text(document.getElementById("colorpicker").value, 20, 80);
+    }
+
+    function dynamicSceneSet(){
+      crumbles = [];
+      // let randomIndexes = [];
+      // for(let i=0; i<4; i++){
+      //   let r = parseInt(random(34))
+      //   while(r == 15 || r == 26 || r == 27 || r == 25){
+      //     r = parseInt(random(34))
+      //   }
+      //   randomIndexes.push(r);
+      // }
+      // let colorIndexes = [15,randomIndexes[0],26,randomIndexes[1],randomIndexes[2],27,randomIndexes[3],25];
+      // colorIndexes = [15,26,25,27];
+      // colorIndexes = [1,4,8,12,19,22,24,33];
+      for(let j=0; j<rows; j++){
+        for(let i=0; i<cols; i++){
+          crumbles.push(new Crumble(outsidePadding+availableHorizontalSpace/2+(crumbleWidth+availableHorizontalSpace)*i,outsidePadding+availableVerticalSpace/2+(crumbleHeight+availableVerticalSpace)*j, crumbleWidth, crumbleHeight, palettes[colorIndexes[i + cols*j]], colorIndexes[i + cols*j]));
+        }
+      }
+    }
+
+    function dynamicScene(){
+      crumbles = [];
+      for(let j=0; j<rows; j++){
+        for(let i=0; i<cols; i++){
+          crumbles.push(new Crumble(outsidePadding+availableHorizontalSpace/2+(crumbleWidth+availableHorizontalSpace)*i,outsidePadding+availableVerticalSpace/2+(crumbleHeight+availableVerticalSpace)*j, crumbleWidth, crumbleHeight, palettes[colorIndex], colorIndex));
+          colorIndex += 1;
+          colorIndex %= palettes.length;
+        }
+      }
+    }
+
+    function dynamicSceneIncreasing(){
+      crumbles = [];
+      let randomColorIndex = frameCount
+      for(let j=0; j<rows; j++){
+        for(let i=0; i<cols; i++){
+          crumbles.push(new Crumble(outsidePadding+availableHorizontalSpace/2+(crumbleWidth+availableHorizontalSpace)*i,outsidePadding+availableVerticalSpace/2+(crumbleHeight+availableVerticalSpace)*j, crumbleWidth, crumbleHeight, palettes[randomColorIndex], (i + j)));
+        }
+      }
+    }
+
+    function scene3x2(){
+      crumbles = [];
+      crumbles.push(new Crumble(100, 100, 300, 300, palettes[floor(random() * palettes.length)]));
+      crumbles.push(new Crumble(500, 100, 300, 300, palettes[floor(random() * palettes.length)]));
+      crumbles.push(new Crumble(900, 100, 300, 300, palettes[floor(random() * palettes.length)]));
+      crumbles.push(new Crumble(100, 500, 300, 300, palettes[floor(random() * palettes.length)]));
+      crumbles.push(new Crumble(500, 500, 300, 300, palettes[floor(random() * palettes.length)]));
+      crumbles.push(new Crumble(900, 500, 300, 300, palettes[floor(random() * palettes.length)]));
+    }
+
+    function setupPalettes(){
+      palettes = [
+        [color(29,26,33), color(47,64,43), color(97,103,60), color(179,176,105), color(245,230,176)],
+        [color(32,109,98), color(93,138,114), color(225,223,153), color(226,179,67), color(122,109,79)],
+        [color(168,12,22), color(228,40,14), color(237,107,17), color(180,160,70), color(39,130,51)],
+        [color(46,55,66), color(70,132,113), color(229,197,42), color(232,160,26), color(219,78,31)],
+        [color(55,114,97), color(81,160,107), color(253,238,148), color(180,162,76), color(158,45,70)],
+        [color(91,105,123), color(236,112,151), color(247,25,78), color(209,146,51), color(231,211,8)],
+        [color(34,76,103), color(251,235,143), color(211,158,92), color(130,80,54), color(34,26,24)],
+        [color(242,214,123), color(200,209,148), color(91,145,100), color(22,81,84), color(25,33,46)],
+        [color(26,49,84), color(252,243,206), color(217,201,148), color(196,169,126), color(129,104,84)],
+        [color(23,28,40), color(52,59,67), color(65,112,132), color(185,189,189), color(218,215,200)],
+        [color(193,210,7), color(30,86,90), color(64,129,205), color(208,216,167), color(254,197,15)],
+        [color(228,222,212), color(185,172,172), color(124,180,130), color(48,90,71), color(35,44,40)],
+        [color(57,62,63), color(89,116,100), color(160,180,154), color(244,237,214), color(205,89,83)],
+        [color(20,68,87), color(28,128,142), color(132,215,187), color(242,239,192), color(219,164,105)],
+        [color(18,52,94), color(46,135,167), color(175,207,216), color(252,252,251), color(229,156,43)],
+        [color(35,82,148), color(61,192,120), color(245,228,67), color(228,169,54), color(213,58,61)],
+        [color(219,139,102), color(23,30,31), color(60,40,26), color(171,122,42), color(221,181,53)],
+        [color(64,66,89), color(216,182,74), color(198,119,30), color(207,46,30), color(68,27,18)],
+        [color(128,143,150), color(157,188,174), color(245,215,180), color(217,93,79), color(143,70,62)],
+        [color(57,175,111), color(240,223,85), color(227,165,34), color(249,95,22), color(169,33,62)],
+        [color(223,32,30), color(193,104,89), color(222,155,92), color(242,231,141), color(183,199,146)],
+        [color(54,41,60), color(102,137,113), color(213,168,113), color(218,88,36), color(163,41,32)],
+        [color(192,75,97), color(206,205,136), color(227,225,188), color(89,155,149), color(17,92,110)],
+        [color(85,155,94), color(242,185,20), color(230,172,49), color(230,72,58), color(240,74,19)],
+        [color(37,59,75), color(97,151,166), color(143,204,193), color(247,248,237), color(214,64,54)],
+        [color(245,56,60), color(32,42,50), color(36,112,110), color(201,202,157), color(229,213,148)],
+        [color('#1F8481'), color('#42B19E'), color('#E7EECC'), color('#F17841'), color('#F4494B')],
+        [color('#0E2D6B'), color('#1782AE'), color('#EEE8C9'), color('#F6B13F'), color('#E2373F')],
+        [color('#EFF4C8'), color('#7DAE8D'), color('#FAB258'), color('#AC413B'), color('#792E4A')],
+        [color('#AA536D'), color('#DF8B4C'), color('#E5C89B'), color('#ABB2B2'), color('#456A4A')],
+        [color('#244E5B'), color('#809A6F'), color('#EEA616'), color('#ED450B'), color('#A72616')],
+        [color(8, 103, 136), color(240, 200, 8), color(255, 241, 208), color(221, 28, 26)],
+        [color(184,149,81),color(75,121,119),color(20,96,114),color(183,108,29),color(122,17,45),color(186,179,156),color(130,148,144),color(178,138,121),color(190,163,117),color(79,46,74),color(129,117,59)],
+        [color(238, 66, 102), color(31, 64, 104), color(242, 228, 181)],
+        [color(25), color(75), color(125), color(175), color(225)],
+        [color(49,139,133), color(243,192,149), color(246,166,129), color(243,103,74), color(204,104,101)],
+      ];
+    }
+  </script>
+</head>
+
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>still</title>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  <script>
+    var canvasWidth;
+    var canvasHeight;
+    var framerate = 24;
+
+    var waves = [];
+
+    class Wave {
+      constructor(pos){
+        this.pos = pos;
+
+        this.resize();
+        this.reposition();
+
+
+        this.signalDenseness = 0.0675;            // How dense the signal peaks are
+        this.signalSpeed = 1;                     // How fast the signal moves
+        this.pulseWidthPercentage = 0.66;         // Pulse width in relation to the total shape width
+        this.shapeRatio = 4/3;                    // Factor of shape height and shape width
+        this.pulseHeightFactor = 0.25;            // Factor of max pulse amplitude in relation to the total shape height
+        this.baseNoiseFactor = 0.02;              // Factor of base noise amplitude in relation to the total shape height
+        this.amplitutePowerFactor = 5.2;          // How much signal peaks are accentuated
+        this.lineWeightFactor = 0.002;            // Weight of lines based on the total shape height
+        this.defaultHumpHeightFactor = 0.015;     // Factor of hump height in relation to the total shape height
+        this.pulseWidthRandomFactorRange = 0.1;   // How much pulse width deviates randomly
+        this.pulseWidthRandomFactor = random(1 - this.pulseWidthRandomFactorRange, 1+ this.pulseWidthRandomFactorRange);
+
+        this.randomNoiseFactor = 0.0005;
+        this.noiseOffset = random(1,100000);
+      }
+
+      reposition(){
+        let step = this.shapeHeight/80;
+        this.y = this.pos * step + canvasHeight * 0.2;
+      }
+
+      resize(){
+        this.width = canvasHeight>2*canvasWidth?0.9:(canvasHeight/canvasWidth)/2;
+        this.shapeWidth = canvasWidth * this.width;
+        this.shapeHeight = this.shapeRatio * this.shapeWidth;
+        this.pulseHeight = this.shapeHeight * this.pulseHeightFactor;
+        this.pulseWidth = this.shapeWidth*this.pulseWidthPercentage*this.pulseWidthRandomFactor;
+        this.baseNoiseMultiplier = this.shapeHeight * this.baseNoiseFactor;
+        this.weight = this.shapeHeight * this.lineWeightFactor;
+        this.defaultHumpHeight = this.shapeHeight * this.defaultHumpHeightFactor;
+        this.lineStart = canvasWidth*(1-this.width)/2;
+        this.lineEnd = canvasWidth - canvasWidth*(1-this.width)/2;
+        this.randomNoise = this.shapeHeight*this.randomNoiseFactor;
+      }
+
+      pulse(val){
+        let multiplier = map(val,0,0.5,1,0);
+        let cutoff = 0.5;
+        multiplier = constrain(multiplier, 0, cutoff)
+        multiplier = map(multiplier, 0, cutoff, 0, 1);
+        multiplier = pow(multiplier,4);
+        return multiplier;
+      }
+
+      amplitude(x){
+        let xOffset = map(x, this.lineStart, this.lineEnd, 0, 100);
+
+        if(xOffset > 30 && xOffset < 70){
+          map(xOffset,30,70,30,30.1);
+        }
+
+        let dist = abs(canvasWidth/2 - x);
+        let multiplier = 0;
+        let pulse = 0;
+        if(dist <= this.pulseWidth/2){
+          pulse = this.pulse(dist/this.pulseWidth)
+          multiplier = this.pulseHeight * pulse;
+        }
+        multiplier += this.baseNoiseMultiplier;
+
+        let amplitude = multiplier * noise((this.noiseOffset + frameCount*this.signalSpeed - xOffset)*(this.signalDenseness));
+        return this.y - map(pow(amplitude,this.amplitutePowerFactor), 0, pow(multiplier,this.amplitutePowerFactor), 0, multiplier) - pulse * this.defaultHumpHeight + random(-this.randomNoise, this.randomNoise);
+      }
+
+      draw(){
+        this.reposition();
+        this.resize();
+        fill(0);
+        stroke(255);
+        strokeWeight(this.weight)
+        beginShape();
+        for(let x=this.lineStart; x<this.lineEnd; x++){
+          vertex(x, this.amplitude(x));
+        }
+        endShape();
+      }
+    }
+
+    function drawBackground(){
+      background(0);
+    }
+
+    function setupCanvas(){
+      createCanvas(canvasWidth, canvasHeight);
+    }
+
+    function windowResized() {
+      canvasWidth = windowWidth;
+      canvasHeight = windowHeight;
+      resizeCanvas(canvasWidth, canvasHeight);
+    }
+
+    function setup(){
+      canvasWidth = windowWidth;
+      canvasHeight = windowHeight;
+
+      setupCanvas();
+      frameRate(framerate);
+      drawBackground();
+
+      for(let i=0; i<80; i+=1)
+        waves.push(new Wave(i));
+      // waves.push(new Wave(500, 3, 0.8));
+    }
+
+    function draw(){
+      drawBackground();
+
+      let shapeWidth = (canvasHeight>2*canvasWidth?0.9:(canvasHeight/canvasWidth)/2) * canvasWidth;
+      let textSizeValue = shapeWidth * 0.154
+      textSize(textSizeValue);
+      while(textWidth("JOY DIVISION") <= shapeWidth){
+        textSizeValue += 0.1;
+        textSize(textSizeValue);
+      }
+      fill(235);
+      noStroke();
+      text("JOY DIVISION", canvasWidth/2 - shapeWidth*1.01/2, canvasHeight * 0.16);
+
+      textSizeValue = shapeWidth * 0.0875
+      textSize(textSizeValue);
+      while(textWidth("UNKNOWN PLEASURES") <= shapeWidth){
+        textSizeValue += 0.1;
+        textSize(textSizeValue);
+      }
+      fill(235);
+      noStroke();
+      text("UNKNOWN PLEASURES", canvasWidth/2 - shapeWidth*1.01/2, canvasHeight * 0.905);
+
+      for(let wave of waves){
+        wave.draw();
+      }
+
+      // textSize(12);
+      // fill(255,255,0);
+      // stroke(255,255,0);
+      // text(parseInt(frameRate()), 20, 20);
+    }
+  </script>
+</head>
+
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bound to get me killed</title>
+  <!-- <body>
+    <label for="colorpicker">Color Picker:</label>
+    <input type="color" id="colorpicker" value="#0000ff">
+  </body> -->
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+      background-color: #000;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  <!-- <script src="../CCapture.all.min.js"></script> -->
+  <script>
+    
+    // ///////////////////////////////////////////
+    // // EXTRA CODE
+    // var capturer = new CCapture( {
+    //   framerate: 30,
+    //   format: 'webm',
+    //   verbose: true
+    // } );
+    // var gifLength = 600
+    // var canvas;
+    // ///////////////////////////////////////////
+
+    var canvasWidth;
+    var canvasHeight;
+    var shapeWidth;
+    var shapeHeight;
+
+    var framerate = 30;
+    var showFrameRate = false;
+    var showPulse = true;
+    var followTarget = false;
+    var transparentCircles = false;
+    var makeItFunky = false;
+    var modulateStrokeWeight = true;
+    var modulateOpacity = true;
+    var circleSort = 0; // values: -1, 0, 1, 2
+    var backgroundColor = "#000";
+
+    var horizontalSpacing;
+    var verticalSpacing;
+    var rows;
+    var cols;
+    var padding = 60;
+    var density = 40;
+    var circleSize = 80;
+    var pulseDensity = 0.04;
+    var pulseSpeed = 0.07;
+    var center;
+    var offset;
+    var centerSpeed = 1.2;
+
+    var circles = [];
+
+    class Circle {
+      constructor(x, y, size) {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.updateTiming();
+        if(makeItFunky) this.color = color(random(50,255),random(50,255),random(50,255));
+        else this.color = 'white';
+      }
+
+      updateTiming(){
+        this.timing = -sqrt((this.x - center.x)*(this.x - center.x) + (this.y - center.y)*(this.y - center.y)) * pulseDensity;
+      }
+
+      draw(){
+        // strokeWeight(frameCount%5 + 5);
+        if(modulateStrokeWeight) strokeWeight((sin((frameCount * pulseSpeed) + this.timing)/2 + makeItFunky ? 2.5 : 2));
+        else strokeWeight(1.2);
+        fill(0,transparentCircles?0:255);
+        if(makeItFunky && parseInt(random(30)) == 7) this.color = color(random(50,255),random(50,255),random(50,255), modulateOpacity ? sin((frameCount * pulseSpeed) + this.timing) * 25 + 230 : 255);
+        if(!makeItFunky && modulateOpacity) this.color = color(255, sin((frameCount * pulseSpeed) + this.timing) * 25 + 230);
+        stroke(this.color);
+        circle(this.x, this.y, this.size + sin((showPulse ? frameCount * pulseSpeed : 0) + this.timing)*this.size/2);
+      }
+    }
+
+    function drawBackground(){
+      background(backgroundColor);
+    }
+
+    function setupCanvas(){
+      calculateCanvas();
+      calculateShape();
+      canvas = createCanvas(canvasWidth, canvasHeight).canvas;
+    }
+
+    function windowResized() {
+      calculateCanvas();
+      calculateShape();
+      resizeCanvas(canvasWidth, canvasHeight);
+      addCircles();
+    }
+
+    function calculateCanvas(){
+      canvasWidth = windowWidth;
+      canvasHeight = windowHeight-4;
+    }
+
+    function calculateShape(){
+      shapeWidth = canvasWidth-(padding*2);
+      shapeHeight = canvasHeight-(padding*2);
+      cols = ceil(shapeWidth/density);
+      if(cols % 2 == 0) cols -= 1;
+      rows = ceil(shapeHeight/density);
+      if(rows % 2 == 0) rows -= 1;
+      horizontalSpacing = shapeWidth/cols;
+      verticalSpacing = shapeHeight/rows;
+      if(!followTarget) center = { x: canvasWidth/2, y: canvasHeight/2 };
+    }
+
+    function mouseClicked(){
+      center = { x: mouseX, y: mouseY }
+      for(let c of circles)
+        c.updateTiming();
+    }
+
+    function handleParams(){
+      let params = getURLParams();
+      console.log(params)
+      if(['True','TRUE','true','T','t','y','yes','Yes','YES'].includes(params.fps)) showFrameRate = true;
+      if(['True','TRUE','true','T','t','y','yes','Yes','YES'].includes(params.pulse)) showPulse = true;
+      if(['True','TRUE','true','T','t','y','yes','Yes','YES'].includes(params.move)) followTarget = true;
+      if(['True','TRUE','true','T','t','y','yes','Yes','YES'].includes(params.transparent)) transparentCircles = true;
+      if(['True','TRUE','true','T','t','y','yes','Yes','YES'].includes(params.funk)) makeItFunky = true;
+      if(['True','TRUE','true','T','t','y','yes','Yes','YES'].includes(params.stroke)) modulateStrokeWeight = true;
+      if(['True','TRUE','true','T','t','y','yes','Yes','YES'].includes(params.opacity)) modulateOpacity = true;
+      if(['True','TRUE','true','T','t','y','yes','Yes','YES'].includes(params.hole)) circleSort = -1;
+      if(['True','TRUE','true','T','t','y','yes','Yes','YES'].includes(params.peak)) circleSort = 1;
+
+      if(['False','FALSE','false','F','f','n','no','No','NO'].includes(params.fps)) showFrameRate = false;
+      if(['False','FALSE','false','F','f','n','no','No','NO'].includes(params.pulse)) showPulse = false;
+      if(['False','FALSE','false','F','f','n','no','No','NO'].includes(params.move)) followTarget = false;
+      if(['False','FALSE','false','F','f','n','no','No','NO'].includes(params.transparent)) transparentCircles = false;
+      if(['False','FALSE','false','F','f','n','no','No','NO'].includes(params.funk)) makeItFunky = false;
+      if(['False','FALSE','false','F','f','n','no','No','NO'].includes(params.stroke)) modulateStrokeWeight = false;
+      if(['False','FALSE','false','F','f','n','no','No','NO'].includes(params.opacity)) modulateOpacity = false;
+    }
+
+    function setup(){
+      setupCanvas();
+      if(framerate)
+        frameRate(framerate);
+      else noLoop();
+
+      handleParams();
+
+      center = { x: canvasWidth/2, y: canvasHeight/2 };
+      offset = { x: random(10000), y: random(10000) };
+
+      if(parseInt(random(4)) == 1) makeItFunky = true;
+      if(parseInt(random(4)) == 1){
+        showPulse = false;
+        followTarget = true;
+      }
+
+      addCircles();
+    }
+
+    function addCircles(){
+      circles = [];
+      for(let i=0; i<rows; i++){
+        for(let j=0; j<cols; j++){
+          circles.push(new Circle(j*horizontalSpacing + horizontalSpacing/2 + padding, i*verticalSpacing + verticalSpacing/2 + padding, circleSize));
+        }
+      }
+      if(circleSort == 2)
+        circles.reverse();
+      else if(circleSort != 0)
+        circles.sort((a,b) => {
+          let distA = sqrt((a.x - center.x)*(a.x - center.x) + (a.y - center.y)*(a.y - center.y))
+          let distB = sqrt((b.x - center.x)*(b.x - center.x) + (b.y - center.y)*(b.y - center.y))
+          if(distA < distB) return circleSort
+          else return -1*circleSort;
+        })
+    }
+
+    function draw(){
+      drawBackground();
+
+      if(followTarget)
+        updateCenterPosition();
+
+      for(let c of circles)
+        c.draw();
+
+      drawInfo();
+
+      // fill(0,0,0,0);
+      // stroke('red');
+      // rect(padding, padding, shapeWidth, shapeHeight);
+  
+      // if(frameCount == 1){
+      //   capturer.start();
+      // }
+      // if(frameCount < gifLength){
+      //   capturer.capture(canvas);
+      // }
+      // else if(frameCount == gifLength){
+      //   capturer.stop();
+      //   capturer.save();
+      // }
+    }
+
+    function updateCenterPosition(){
+      offset.x += (centerSpeed)/100;
+      offset.y += (centerSpeed)/100;
+      center.x = map(noise(offset.x), 0, 1, 0, canvasWidth);
+      center.y = map(noise(offset.y), 0, 1, 0, canvasHeight);
+      for(let c of circles)
+        c.updateTiming();
+    }
+
+    function drawInfo(){
+      textSize(12);
+      fill(255,255,0);
+      stroke(backgroundColor);
+      if(showFrameRate) text(parseInt(frameRate()), 20, 20);
+    }
+  </script>
+</head>
+
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>now more than ever</title>
+  <!-- <body>
+    <label for="colorpicker">Color Picker:</label>
+    <input type="color" id="colorpicker" value="#0000ff">
+  </body> -->
+  <input type="file" id='input-image'>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+      background-color: #000;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  <script src="png.js"></script>
+  <script>
+    var canvasWidth;
+    var canvasHeight;
+
+    var framerate = 30;
+    var showFrameRate = true;
+    var backgroundColor = "#000";
+    var padding = 40;
+    var spacing = 6;
+    var circleSize = 3;
+    var rows = 150;
+    var cols = 300;
+
+    var center;
+    var offset;
+    var centerSpeed = 1;
+
+    var circles = [];
+
+    var reader;
+    var imageData = null;
+
+    class Circle {
+      constructor(x, y, size) {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.updateTiming();
+        this.useSetSize = false;
+        this.setSize;
+      }
+
+      updateTiming(){
+        this.timing = sqrt((this.x - center.x)*(this.x - center.x) + (this.y - center.y)*(this.y - center.y))/100;
+      }
+
+      setImageValue(image){
+        this.useSetSize = true;
+
+        let imageWidth = image.getWidth();
+        let imageHeight = image.getHeight();
+        let renderWidth = canvasWidth;
+        let renderHeight = canvasHeight;
+        let imageRatio = imageWidth/imageHeight;
+        let renderRatio = renderWidth/renderHeight;
+        if(imageRatio > renderRatio){
+          renderHeight = renderWidth/imageRatio;
+        }
+        else renderWidth = renderHeight * imageRatio;
+
+        let pixelX = floor((this.x/renderWidth) * imageWidth);
+        let pixelY = floor((this.y/renderHeight) * imageHeight);
+        if(pixelX < imageWidth && pixelY < imageHeight){
+          let pixel = image.getPixel(pixelX, pixelY);
+          let brightness = 0.2126 * pixel[0] + 0.7152 * pixel[1] + 0.0722 * pixel[2];
+          this.setSize = this.size * 1.5 * brightness/255;
+        }
+        else{
+          this.setSize = 0;
+        }
+      }
+
+      draw(){
+        // strokeWeight(frameCount%5 + 5);
+        strokeWeight(1);
+        fill(backgroundColor);
+        stroke(255);
+        circle(this.x, this.y, this.useSetSize ? this.setSize : this.size - sin(this.timing)*this.size/2);
+      }
+    }
+
+    function drawBackground(){
+      background(backgroundColor);
+    }
+
+    function setupCanvas(){
+      calculateCanvas();
+      createCanvas(canvasWidth, canvasHeight);
+    }
+
+    function windowResized() {
+      calculateCanvas();
+      resizeCanvas(canvasWidth, canvasHeight);
+    }
+
+    function calculateCanvas(){
+      canvasWidth = windowWidth;
+      canvasHeight = windowHeight-4;
+    }
+
+    function mouseClicked(){
+      center = { x: mouseX, y: mouseY }
+      for(let c of circles)
+        c.updateTiming();
+    }
+
+    function keyPressed(){
+      var fileInputElement = document.getElementById('input-image');
+      fileInputElement.click();
+    }
+
+    function setupReader(){
+      reader = new FileReader();
+      reader.onload = function(event){
+        var reader = new PNGReader(event.target.result);
+        reader.parse(function(err, png){
+          if (err) throw err;
+          console.log("Width: " + png.getWidth());
+          console.log("Height: " + png.getHeight());
+          console.log("Pixel[100,100]: " + png.getPixel(100,100));
+          imageData = png;
+          for(let c of circles)
+            c.setImageValue(imageData);
+        });
+      };
+
+      var fileInputElement = document.getElementById('input-image');
+      fileInputElement.style.display = "none"
+      fileInputElement.onchange = function(){
+        reader.readAsArrayBuffer(fileInputElement.files[0]);
+      };
+    }
+
+    function setup(){
+      setupCanvas();
+      if(framerate)
+        frameRate(framerate);
+      else noLoop();
+
+      center = { x: canvasWidth/2, y: canvasHeight/2 };
+      offset = { x: random(10000), y: random(10000) };
+
+      for(let i=0; i<rows; i++){
+        for(let j=0; j<cols; j++){
+          circles.push(new Circle(j*spacing + padding, i*spacing + padding, circleSize));
+        }
+      }
+
+      setupReader();
+    }
+
+    function draw(){
+      drawBackground();
+
+      if(!imageData)
+        updateCenterPosition();
+
+      for(let c of circles)
+        c.draw();
+
+      drawInfo();
+    }
+
+    function updateCenterPosition(){
+      offset.x += (centerSpeed)/100;
+      offset.y += (centerSpeed)/100;
+      center.x = map(noise(offset.x), 0, 1, 0, canvasWidth);
+      center.y = map(noise(offset.y), 0, 1, 0, canvasHeight);
+      for(let c of circles)
+        c.updateTiming();
+    }
+
+    function drawInfo(){
+      textSize(12);
+      fill(255,255,0);
+      stroke(backgroundColor);
+      if(showFrameRate) text(parseInt(frameRate()), 20, 20);
+    }
+  </script>
+</head>
+
+</html>
