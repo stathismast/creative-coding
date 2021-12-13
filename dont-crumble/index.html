@@ -170,7 +170,7 @@
     function draw(){
       drawBackground();
 
-      dynamicSceneIncreasing();
+      dynamicScene();
 
       for(let c of crumbles)
         c.draw();
@@ -211,7 +211,7 @@
       crumbles = [];
       for(let j=0; j<rows; j++){
         for(let i=0; i<cols; i++){
-          crumbles.push(new Crumble(outsidePadding+availableHorizontalSpace/2+(crumbleWidth+availableHorizontalSpace)*i,outsidePadding+availableVerticalSpace/2+(crumbleHeight+availableVerticalSpace)*j, crumbleWidth, crumbleHeight, palettes[colorIndex], colorIndex));
+          crumbles.push(new Crumble(outsidePadding+availableHorizontalSpace/2+(crumbleWidth+availableHorizontalSpace)*i,outsidePadding+availableVerticalSpace/2+(crumbleHeight+availableVerticalSpace)*j, crumbleWidth, crumbleHeight, palettes[colorIndex], (i + j)));
           colorIndex += 1;
           colorIndex %= palettes.length;
         }
