@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>i just think they're neat</title>
+  <!-- <body>
+    <label for="colorpicker">Color Picker:</label>
+    <input type="color" id="colorpicker" value="#0000ff">
+  </body> -->
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+      background-color: #fff;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
+  <script src="assets.js"></script>
+  <script>
+    const framerate = 60;
+    const showFrameRate = false;
+    const backgroundColor = "#fff";
+
+    let canvasWidth;
+    let canvasHeight;
+    let scale;
+
+    function drawBackground(){
+      let bg_height = assets.background.height * scale;
+      let bg_width = assets.background.width * scale;
+      let repeats = ceil(canvasWidth / bg_width) + 1;
+      let total_width = repeats * bg_width;
+      for(let i=0; i<repeats; i++){
+        let offset = frameCount + total_width - i*bg_width
+        let x_position = total_width - offset%total_width - bg_width
+        image(assets.background.image, x_position, 0, bg_width, canvasHeight);
+      }
+    }
+
+    function setupCanvas(){
+      calculateCanvas();
+      createCanvas(canvasWidth, canvasHeight);
+    }
+
+    function windowResized() {
+      calculateCanvas();
+      resizeCanvas(canvasWidth, canvasHeight);
+    }
+
+    function calculateCanvas(){
+      canvasWidth = windowWidth;
+      canvasHeight = windowHeight;
+    }
+
+    function loadImages(){
+      for(let key of Object.keys(assets)){
+        if(typeof assets[key].image == 'string'){
+          assets[key].image = loadImage(assets[key].image);
+        }
+        else{
+          for(let i in assets[key].image){
+            assets[key].image[i] = loadImage(assets[key].image[i]);
+          }
+        }
+      }
+    }
+
+    function calculateScale(){
+      scale = canvasHeight/assets.background.height
+    }
+
+    function setup(){
+      setupCanvas();
+      if(framerate)
+        frameRate(framerate);
+      else noLoop();
+
+      loadImages();
+      calculateScale();
+    }
+
+    function draw(){
+      drawBackground();
+      drawInfo();
+    }
+
+    function drawInfo(){
+      textSize(12);
+      fill(255,255,0);
+      stroke(backgroundColor);
+      if(showFrameRate) text(parseInt(frameRate()), 20, 20);
+      
+      // text(document.getElementById("colorpicker").value, 20, 80);
+    }
+  </script>
+</head>
+
+</html>
