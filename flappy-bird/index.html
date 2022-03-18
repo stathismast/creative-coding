@@ -26,30 +26,85 @@
     const showFrameRate = false;
     const backgroundColor = "#fff";
 
+    const backgroundSpeed = 1;
+
     let canvasWidth;
     let canvasHeight;
     let scale;
 
+    let bird;
+
+    class Bird {
+      constructor(asset, scale, canvasWidth, canvasHeight) {
+        this.asset = asset;
+        this.update(scale, canvasWidth, canvasHeight);
+        this.x = this.canvasWidth/6
+        this.y = this.canvasHeight/3
+        this.width = this.asset.width * this.scale;
+        this.height = this.asset.height * this.scale;
+        this.flapSpeed = 0.25
+        this.tilt = 0;
+        this.velocity = -1;
+        this.ticks = 0;
+        this.acceleration = 0.40;
+      }
+
+      update(scale, canvasWidth, canvasHeight) {
+        this.scale = scale;
+        this.canvasWidth = canvasWidth;
+        this.canvasHeight = canvasHeight;
+      }
+
+      jump(){
+        this.velocity += 2;
+        this.ticks = 0;
+      }
+
+      move(){
+        this.ticks += 1;
+        this.y -= this.velocity * this.acceleration * this.ticks;
+      }
+
+      draw(){
+        let imgIndex = ceil(frameCount*this.flapSpeed)%4
+        if(imgIndex % 2 == 1) imgIndex = 1;
+        let img = this.asset.image[imgIndex];
+
+        imageMode(CENTER);
+        translate(this.x+this.width/2, this.y+this.height/2);
+        rotate(-PI / 180 * this.tilt);
+
+        image(img, 0, 0, this.width, this.height);
+
+        rotate(PI / 180 * this.tilt);
+        translate(-(this.x+this.width/2), -(this.y+this.height/2));
+        imageMode(CORNER);
+      }
+    }
+
     function drawBackground(){
-      let bg_height = assets.background.height * scale;
-      let bg_width = assets.background.width * scale;
-      let repeats = ceil(canvasWidth / bg_width) + 1;
-      let total_width = repeats * bg_width;
+      let bgHeight = assets.background.height * scale;
+      let bgWidth = assets.background.width * scale;
+      let repeats = ceil(canvasWidth / bgWidth) + 1;
+      let totalWidth = repeats * bgWidth;
       for(let i=0; i<repeats; i++){
-        let offset = frameCount + total_width - i*bg_width
-        let x_position = total_width - offset%total_width - bg_width
-        image(assets.background.image, x_position, 0, bg_width, canvasHeight);
+        let offset = backgroundSpeed * frameCount + totalWidth - i*bgWidth
+        let x_position = totalWidth - offset%totalWidth - bgWidth
+        image(assets.background.image, x_position, 0, bgWidth, bgHeight);
       }
     }
 
     function setupCanvas(){
       calculateCanvas();
+      calculateScale();
       createCanvas(canvasWidth, canvasHeight);
     }
 
     function windowResized() {
       calculateCanvas();
+      calculateScale();
       resizeCanvas(canvasWidth, canvasHeight);
+      bird.update(scale, canvasWidth, canvasHeight);
     }
 
     function calculateCanvas(){
@@ -74,18 +129,25 @@
       scale = canvasHeight/assets.background.height
     }
 
+    function keyPressed() {
+      bird.jump();
+    }
+
     function setup(){
+    loadImages();
       setupCanvas();
       if(framerate)
         frameRate(framerate);
       else noLoop();
-
-      loadImages();
-      calculateScale();
+      bird = new Bird(assets.bird, scale, canvasWidth, canvasHeight);
     }
 
     function draw(){
       drawBackground();
+
+      bird.draw();
+      bird.move();
+
       drawInfo();
     }
 
