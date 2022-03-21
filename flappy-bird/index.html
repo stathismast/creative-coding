@@ -21,6 +21,9 @@
   </style>
   <script src="https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js"></script>
   <script src="assets.js"></script>
+  <script src="bird.js"></script>
+  <script src="pipe.js"></script>
+  <script src="p5.collide2d.js"></script>
   <script>
     const framerate = 60;
     const showFrameRate = false;
@@ -33,61 +36,7 @@
     let scale;
 
     let bird;
-
-    class Bird {
-      constructor(asset, scale, canvasWidth, canvasHeight) {
-        this.asset = asset;
-        this.update(scale, canvasWidth, canvasHeight);
-        this.x = this.canvasWidth/6
-        this.y = this.canvasHeight/3
-        this.width = this.asset.width * this.scale;
-        this.height = this.asset.height * this.scale;
-        this.flapSpeed = 0.25
-        this.tilt = 0;
-        this.velocity = 0;
-        this.ticks = 0;
-        this.acceleration = 0.15;
-        this.jumpHeight = 0.0025;
-        this.terminalVelocity = 25;
-      }
-
-      update(scale, canvasWidth, canvasHeight) {
-        this.scale = scale;
-        this.canvasWidth = canvasWidth;
-        this.canvasHeight = canvasHeight;
-      }
-
-      jump(){
-        this.velocity = this.jumpHeight * this.canvasHeight;
-        this.ticks = 0;
-        console.log(this.canvasWidth, this.canvasHeight)
-      }
-
-      move(){
-        this.ticks += 1;
-        let displacement = this.acceleration * this.ticks * this.ticks - this.velocity * this.ticks;
-        if(displacement > this.terminalVelocity){
-          displacement = this.terminalVelocity;
-        }
-        this.y += displacement;
-      }
-
-      draw(){
-        let imgIndex = ceil(frameCount*this.flapSpeed)%4
-        if(imgIndex % 2 == 1) imgIndex = 1;
-        let img = this.asset.image[imgIndex];
-
-        imageMode(CENTER);
-        translate(this.x+this.width/2, this.y+this.height/2);
-        rotate(-PI / 180 * this.tilt);
-
-        image(img, 0, 0, this.width, this.height);
-
-        rotate(PI / 180 * this.tilt);
-        translate(-(this.x+this.width/2), -(this.y+this.height/2));
-        imageMode(CORNER);
-      }
-    }
+    let pipe;
 
     function drawBackground(){
       let bgHeight = assets.background.height * scale;
@@ -112,6 +61,7 @@
       calculateScale();
       resizeCanvas(canvasWidth, canvasHeight);
       bird.update(scale, canvasWidth, canvasHeight);
+      pipe.update(scale, canvasWidth, canvasHeight);
     }
 
     function calculateCanvas(){
@@ -140,22 +90,49 @@
       bird.jump();
     }
 
+    function mouseClicked() {
+      bird.jump();
+    }
+
+    function preload(){
+      loadImages();
+    }
+
     function setup(){
-    loadImages();
       setupCanvas();
       if(framerate)
         frameRate(framerate);
       else noLoop();
       bird = new Bird(assets.bird, scale, canvasWidth, canvasHeight);
+      pipe = new Pipe(assets.pipe, scale, canvasWidth, canvasHeight);
     }
 
     function draw(){
       drawBackground();
 
       bird.draw();
+      pipe.draw();
       bird.move();
+      pipe.move();
 
       drawInfo();
+
+      // let poly = [];
+      // let hit = false;
+      // poly[0] = createVector(323, 431);
+      // poly[1] = createVector(210, 311);
+      // poly[2] = createVector(220, 223);
+      // poly[3] = createVector(590, 233);
+
+      // hit = collideRectPoly(mouseX, mouseY, 45, 100, poly);
+      // stroke(hit ? color('red') : 0);
+      // console.log(hit)
+
+      // beginShape();
+      // for (const { x, y } of poly)
+      //   vertex(x, y);
+      // endShape(CLOSE);
+      // rect(mouseX, mouseY, 45, 100);
     }
 
     function drawInfo(){
